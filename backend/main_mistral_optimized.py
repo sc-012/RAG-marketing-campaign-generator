@@ -57,21 +57,31 @@ def initialize_rag_components():
         )
         Settings.embed_model = embed_model
         
-        # Initialize LLM (using Mistral 7B Instruct locally)
+        # Initialize LLM (using Mistral 7B Instruct with memory optimization)
+        print("Loading Mistral 7B Instruct model... This may take a few minutes.")
+        
         llm = HuggingFaceLLM(
             model_name="mistralai/Mistral-7B-Instruct-v0.1",
             tokenizer_name="mistralai/Mistral-7B-Instruct-v0.1",
-            context_window=4096,
-            max_new_tokens=1000,
+            context_window=2048,  # Reduced context window to save memory
+            max_new_tokens=512,   # Reduced max tokens
             temperature=0.7,
             model_kwargs={
                 "torch_dtype": "auto",
                 "device_map": "auto",
-                "load_in_8bit": True,  # Use 8-bit quantization to save memory
+                "load_in_4bit": True,  # Use 4-bit quantization for maximum memory savings
+                "trust_remote_code": True,
             },
-            generate_kwargs={"do_sample": True, "temperature": 0.7, "top_p": 0.9},
+            generate_kwargs={
+                "do_sample": True, 
+                "temperature": 0.7, 
+                "top_p": 0.9,
+                "repetition_penalty": 1.1
+            },
         )
         Settings.llm = llm
+        
+        print("Mistral 7B model loaded successfully!")
         
         # Try to load existing collection or create new one
         try:
@@ -89,7 +99,7 @@ def initialize_rag_components():
             
     except Exception as e:
         print(f"Error initializing RAG components: {e}")
-        print("Make sure Ollama is installed and running with llama2:7b model")
+        print("Make sure you have enough memory (8GB+ RAM recommended)")
         # Fallback initialization
         embed_model = HuggingFaceEmbedding(
             model_name="sentence-transformers/all-MiniLM-L6-v2"
@@ -191,7 +201,7 @@ async def query_campaign(
         # Query the vector index
         query_engine = vector_index.as_query_engine(
             response_mode="compact",
-            similarity_top_k=5
+            similarity_top_k=3  # Reduced to save memory
         )
         
         response = query_engine.query(enhanced_query)

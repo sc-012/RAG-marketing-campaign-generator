@@ -1,41 +1,41 @@
 #!/bin/bash
 
 # DynamicRAGSystem Startup Script
-echo "🚀 Starting DynamicRAGSystem - AI Marketing Campaign Generator"
+echo "Starting DynamicRAGSystem - AI Marketing Campaign Generator"
 echo "=============================================================="
 
 # Check if Python is installed
 if ! command -v python3 &> /dev/null; then
-    echo "❌ Python 3 is not installed. Please install Python 3.8+ first."
+    echo "ERROR: Python 3 is not installed. Please install Python 3.8+ first."
     exit 1
 fi
 
 # Check if Node.js is installed
 if ! command -v node &> /dev/null; then
-    echo "❌ Node.js is not installed. Please install Node.js 16+ first."
+    echo "ERROR: Node.js is not installed. Please install Node.js 16+ first."
     exit 1
 fi
 
 # Check if Ollama is installed and running
 if ! command -v ollama &> /dev/null; then
-    echo "❌ Ollama is not installed. Please run ./setup_ollama.sh first."
+    echo "ERROR: Ollama is not installed. Please run ./setup_ollama.sh first."
     exit 1
 fi
 
 # Check if llama2:7b model is available
 if ! ollama list | grep -q "llama2:7b"; then
-    echo "❌ Llama2:7b model not found. Please run ./setup_ollama.sh first."
+    echo "ERROR: Llama2:7b model not found. Please run ./setup_ollama.sh first."
     exit 1
 fi
 
 # Check if Ollama service is running
 if ! curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
-    echo "🚀 Starting Ollama service..."
+    echo "Starting Ollama service..."
     ollama serve &
     sleep 3
 fi
 
-echo "📦 Setting up backend..."
+echo "Setting up backend..."
 cd backend
 
 # Create virtual environment if it doesn't exist
@@ -60,7 +60,7 @@ BACKEND_PID=$!
 # Wait a moment for backend to start
 sleep 3
 
-echo "📦 Setting up frontend..."
+echo "Setting up frontend..."
 cd ../frontend
 
 # Install dependencies
@@ -79,11 +79,11 @@ npm start &
 FRONTEND_PID=$!
 
 echo ""
-echo "✅ DynamicRAGSystem is starting up!"
+echo "DynamicRAGSystem is starting up!"
 echo "=============================================================="
-echo "🌐 Frontend: http://localhost:3000"
-echo "🔧 Backend API: http://localhost:8000"
-echo "📚 API Docs: http://localhost:8000/docs"
+echo "Frontend: http://localhost:3000"
+echo "Backend API: http://localhost:8000"
+echo "API Docs: http://localhost:8000/docs"
 echo ""
 echo "Press Ctrl+C to stop both servers"
 echo ""
@@ -91,10 +91,10 @@ echo ""
 # Function to cleanup on exit
 cleanup() {
     echo ""
-    echo "🛑 Stopping servers..."
+    echo "Stopping servers..."
     kill $BACKEND_PID 2>/dev/null
     kill $FRONTEND_PID 2>/dev/null
-    echo "✅ Servers stopped."
+    echo "Servers stopped."
     exit 0
 }
 

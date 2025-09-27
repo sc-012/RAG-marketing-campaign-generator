@@ -2,7 +2,7 @@
 
 A fullstack MVP application that uses Retrieval-Augmented Generation (RAG) to generate AI-powered marketing campaigns based on uploaded documents and user parameters.
 
-## 🚀 Features
+## Features
 
 - **Document Upload & Indexing**: Upload PDFs, CSVs, and text files to build a knowledge base
 - **AI-Powered Campaign Generation**: Generate tailored marketing campaigns using RAG technology
@@ -11,7 +11,7 @@ A fullstack MVP application that uses Retrieval-Augmented Generation (RAG) to ge
 - **Vector Search**: Uses ChromaDB for efficient document retrieval
 - **Hugging Face Embeddings**: Leverages state-of-the-art sentence transformers
 
-## 🏗️ Architecture
+## Architecture
 
 ### Backend (Python + FastAPI)
 - **FastAPI**: Modern, fast web framework for building APIs
@@ -46,7 +46,7 @@ V4_React_Marketing/
 └── README.md               # This file
 ```
 
-## 🛠️ Installation & Setup
+## Installation & Setup
 
 ### Prerequisites
 
@@ -114,7 +114,7 @@ V4_React_Marketing/
 
    The frontend will be available at `http://localhost:3000`
 
-## 🚀 Usage
+## Usage
 
 1. **Upload Documents**: Use the file upload section to add marketing documents (PDFs, CSVs, text files) to build your knowledge base.
 
@@ -178,7 +178,7 @@ Health check endpoint.
 }
 ```
 
-## 🚀 Deployment
+## Deployment
 
 ### Frontend (Vercel)
 
@@ -199,7 +199,7 @@ The backend can be deployed on any cloud platform that supports Python:
 2. **Railway**: Deploy directly from GitHub
 3. **AWS/GCP/Azure**: Use container services or serverless functions
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -225,7 +225,7 @@ The backend can be deployed on any cloud platform that supports Python:
 4. Add tests if applicable
 5. Submit a pull request
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License.
 
