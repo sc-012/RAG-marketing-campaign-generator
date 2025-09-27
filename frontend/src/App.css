@@ -1,0 +1,201 @@
+.App {
+  text-align: left;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.App-header {
+  background-color: #282c34;
+  padding: 20px;
+  color: white;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Card hover effects */
+.MuiPaper-root {
+  transition: box-shadow 0.3s ease-in-out;
+}
+
+.MuiPaper-root:hover {
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+/* Button animations */
+.MuiButton-root {
+  transition: all 0.3s ease-in-out;
+}
+
+.MuiButton-root:hover {
+  transform: translateY(-2px);
+}
+
+/* Loading animation */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.loading-pulse {
+  animation: pulse 2s infinite;
+}
+
+/* Campaign result styling */
+.campaign-result {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 20px 0;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .MuiContainer-root {
+    padding: 16px !important;
+  }
+  
+  .MuiPaper-root {
+    padding: 16px !important;
+  }
+  
+  .MuiGrid-container {
+    gap: 16px;
+  }
+}
+
+/* Custom chip styling */
+.MuiChip-root {
+  margin: 4px;
+}
+
+/* Form field styling */
+.MuiTextField-root {
+  margin-bottom: 16px;
+}
+
+.MuiFormControl-root {
+  margin-bottom: 16px;
+}
+
+/* Success/Error message styling */
+.MuiAlert-root {
+  border-radius: 8px;
+  margin: 8px 0;
+}
+
+/* Icon styling */
+.MuiSvgIcon-root {
+  vertical-align: middle;
+}
+
+/* Divider styling */
+.MuiDivider-root {
+  margin: 16px 0;
+}
+
+/* Card content styling */
+.MuiCardContent-root {
+  padding: 24px !important;
+}
+
+/* Typography styling */
+.MuiTypography-h5 {
+  font-weight: 600 !important;
+  margin-bottom: 16px !important;
+}
+
+.MuiTypography-h6 {
+  font-weight: 500 !important;
+}
+
+/* Button group styling */
+.MuiBox-root {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* File upload area styling */
+.file-upload-area {
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  transition: border-color 0.3s ease;
+}
+
+.file-upload-area:hover {
+  border-color: #1976d2;
+}
+
+.file-upload-area.dragover {
+  border-color: #1976d2;
+  background-color: #f0f7ff;
+}
+
+/* Campaign parameters grid */
+.campaign-params {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+  margin: 16px 0;
+}
+
+/* Generated campaign styling */
+.generated-campaign {
+  background: #f8f9fa;
+  border-left: 4px solid #1976d2;
+  padding: 20px;
+  border-radius: 0 8px 8px 0;
+  margin: 16px 0;
+}
+
+/* Loading states */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+}
+
+/* Error states */
+.error-container {
+  background: #ffebee;
+  border: 1px solid #f44336;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+}
+
+/* Success states */
+.success-container {
+  background: #e8f5e8;
+  border: 1px solid #4caf50;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+}
