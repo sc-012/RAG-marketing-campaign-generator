@@ -7,6 +7,10 @@ import shutil
 from typing import Optional, List
 import uvicorn
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # RAG and ML imports
 from llama_index.core import (
@@ -58,18 +62,15 @@ def initialize_rag_components():
         Settings.embed_model = embed_model
         
         # Initialize LLM (using Mistral 7B Instruct with memory optimization)
-        print("Loading Mistral 7B Instruct model... This may take a few minutes.")
+        print("Loading DistilGPT-2 model... This should be quick.")
         
         llm = HuggingFaceLLM(
-            model_name="mistralai/Mistral-7B-Instruct-v0.1",
-            tokenizer_name="mistralai/Mistral-7B-Instruct-v0.1",
-            context_window=2048,  # Reduced context window to save memory
-            max_new_tokens=512,   # Reduced max tokens
-            temperature=0.7,
+            model_name="distilgpt2",
+            tokenizer_name="distilgpt2",
+            context_window=1024,  # Smaller context window
+            max_new_tokens=256,   # Reduced max tokens
             model_kwargs={
-                "torch_dtype": "auto",
-                "device_map": "auto",
-                "load_in_4bit": True,  # Use 4-bit quantization for maximum memory savings
+                "dtype": "auto",
                 "trust_remote_code": True,
             },
             generate_kwargs={
@@ -81,7 +82,7 @@ def initialize_rag_components():
         )
         Settings.llm = llm
         
-        print("Mistral 7B model loaded successfully!")
+        print("DistilGPT-2 model loaded successfully!")
         
         # Try to load existing collection or create new one
         try:
@@ -106,10 +107,18 @@ def initialize_rag_components():
         )
         Settings.embed_model = embed_model
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize RAG components on startup"""
+# Initialize RAG components on startup
+try:
     initialize_rag_components()
+    print("RAG system initialized successfully!")
+except Exception as e:
+    print(f"RAG initialization failed: {e}")
+    print("Continuing with basic functionality...")
+    # Set basic fallback values
+    vector_index = None
+    llm = None
+    embed_model = None
+    chroma_client = None
 
 @app.get("/")
 async def root():
