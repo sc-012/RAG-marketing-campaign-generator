@@ -25,6 +25,10 @@ from llama_index.llms.openai import OpenAI
 import chromadb
 from chromadb.config import Settings as ChromaSettings
 
+# Multi-Agent System Imports
+from crew_orchestrator import MarketingCrewOrchestrator
+from langchain_openai import ChatOpenAI
+
 # Initialize FastAPI app
 app = FastAPI(title="DynamicRAGSystem - AI Marketing Campaign Generator", version="1.0.0")
 
@@ -44,8 +48,36 @@ embed_model = None
 chroma_client = None
 collection = None
 
+# Multi-Agent System
+crew_orchestrator = None
+multi_agent_llm = None
+
 # Upload progress tracking
 upload_progress = {"status": "idle", "message": "", "progress": 0}
+
+def initialize_multi_agent_system():
+    """Initialize multi-agent system"""
+    global crew_orchestrator, multi_agent_llm
+    
+    try:
+        print("Initializing Multi-Agent System...")
+        
+        # Initialize LLM for multi-agent system
+        multi_agent_llm = ChatOpenAI(
+            model="gpt-3.5-turbo",
+            temperature=0.7,
+            api_key=os.getenv("OPENAI_API_KEY")
+        )
+        
+        # Initialize crew orchestrator
+        crew_orchestrator = MarketingCrewOrchestrator(multi_agent_llm)
+        
+        print("Multi-Agent System initialized successfully!")
+        return True
+        
+    except Exception as e:
+        print(f"Error initializing Multi-Agent System: {str(e)}")
+        return False
 
 def initialize_rag_components():
     """Initialize RAG components on startup"""
@@ -114,6 +146,16 @@ except Exception as e:
     llm = None
     embed_model = None
     chroma_client = None
+
+# Initialize Multi-Agent System on startup
+try:
+    initialize_multi_agent_system()
+    print("Multi-Agent System initialized successfully!")
+except Exception as e:
+    print(f"Multi-Agent System initialization failed: {e}")
+    print("Continuing with single-agent functionality...")
+    crew_orchestrator = None
+    multi_agent_llm = None
 
 @app.get("/")
 async def root():
@@ -446,6 +488,192 @@ async def generate_campaign_template(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating template: {str(e)}")
+
+@app.post("/multi-agent-campaign")
+async def generate_multi_agent_campaign(
+    goal: str = Form(...),
+    audience: str = Form(...),
+    tone: str = Form(...),
+    query: str = Form(...),
+    template_type: str = Form(""),
+    additional_params: str = Form("")
+):
+    """Generate comprehensive campaign using multi-agent system"""
+    global crew_orchestrator, vector_index
+    
+    if not crew_orchestrator:
+        raise HTTPException(status_code=500, detail="Multi-Agent System not initialized")
+    
+    if not vector_index:
+        raise HTTPException(status_code=500, detail="RAG system not initialized")
+    
+    try:
+        # Get document content from vector index for analysis using RAG
+        print(f"Retrieving relevant documents for query: {query}")
+        
+        # Use RAG to retrieve relevant document content
+        retriever = vector_index.as_retriever(similarity_top_k=5)
+        relevant_docs = retriever.retrieve(query)
+        
+        # Combine relevant documents into a comprehensive context
+        document_content = ""
+        document_type = "marketing_documents"
+        
+        if relevant_docs:
+            print(f"Found {len(relevant_docs)} relevant documents")
+            for i, doc in enumerate(relevant_docs):
+                document_content += f"\n--- Document {i+1} ---\n"
+                document_content += f"Content: {doc.text}\n"
+                if hasattr(doc, 'metadata') and doc.metadata:
+                    document_content += f"Metadata: {doc.metadata}\n"
+        else:
+            print("No relevant documents found, using general context")
+            document_content = f"General marketing context for {goal} campaign targeting {audience}. Query: {query}"
+        
+        print(f"Document content length: {len(document_content)} characters")
+        
+        # Prepare additional parameters
+        additional_params_dict = {}
+        if additional_params:
+            try:
+                import json
+                additional_params_dict = json.loads(additional_params)
+            except:
+                additional_params_dict = {"custom_params": additional_params}
+        
+        # Generate comprehensive campaign using multi-agent system
+        campaign_result = await crew_orchestrator.generate_comprehensive_campaign(
+            document_content=document_content,
+            document_type=document_type,
+            campaign_goal=goal,
+            target_audience=audience,
+            template_type=template_type if template_type else None,
+            additional_params=additional_params_dict
+        )
+        
+        return {
+            "multi_agent_campaign": campaign_result,
+            "parameters": {
+                "goal": goal,
+                "audience": audience,
+                "tone": tone,
+                "query": query,
+                "template_type": template_type,
+                "additional_params": additional_params_dict
+            },
+            "agents_used": [
+                "Document Analyzer",
+                "Campaign Strategist", 
+                "Content Creator",
+                "Social Media Specialist",
+                "Email Marketing Expert",
+                "A/B Testing Analyst",
+                "Visual Designer",
+                "Performance Optimizer"
+            ],
+            "generated_at": "2024-01-01T00:00:00Z"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating multi-agent campaign: {str(e)}")
+
+@app.get("/multi-agent-status")
+async def get_multi_agent_status():
+    """Get multi-agent system status"""
+    return {
+        "multi_agent_available": crew_orchestrator is not None,
+        "llm_available": multi_agent_llm is not None,
+        "agents_initialized": crew_orchestrator is not None,
+        "system_status": "Multi-Agent System Ready" if crew_orchestrator else "Single-Agent Mode"
+    }
+
+@app.get("/agent-capabilities")
+async def get_agent_capabilities():
+    """Get detailed information about each agent's capabilities"""
+    return {
+        "agents": [
+            {
+                "name": "Document Analyzer",
+                "role": "Senior Marketing Document Analyst",
+                "capabilities": [
+                    "Brand identity extraction",
+                    "Target audience analysis", 
+                    "Key message identification",
+                    "Strategic insight generation"
+                ]
+            },
+            {
+                "name": "Campaign Strategist",
+                "role": "Senior Marketing Campaign Strategist", 
+                "capabilities": [
+                    "Comprehensive campaign strategy",
+                    "Channel selection and optimization",
+                    "Timeline and budget planning",
+                    "Success metrics definition"
+                ]
+            },
+            {
+                "name": "Content Creator",
+                "role": "Senior Content Marketing Specialist",
+                "capabilities": [
+                    "Multi-channel content creation",
+                    "Content calendar development",
+                    "Blog and video content strategy",
+                    "Content repurposing strategies"
+                ]
+            },
+            {
+                "name": "Social Media Specialist",
+                "role": "Senior Social Media Marketing Specialist",
+                "capabilities": [
+                    "Platform-specific strategies",
+                    "Engagement optimization",
+                    "Hashtag and content strategies",
+                    "Community management planning"
+                ]
+            },
+            {
+                "name": "Email Marketing Expert",
+                "role": "Senior Email Marketing Specialist",
+                "capabilities": [
+                    "Email campaign development",
+                    "Automation workflow design",
+                    "Segmentation strategies",
+                    "Deliverability optimization"
+                ]
+            },
+            {
+                "name": "A/B Testing Analyst",
+                "role": "Senior A/B Testing and Optimization Specialist",
+                "capabilities": [
+                    "Test design and implementation",
+                    "Statistical analysis",
+                    "Performance optimization",
+                    "Continuous improvement planning"
+                ]
+            },
+            {
+                "name": "Visual Designer",
+                "role": "Senior Visual Designer and Brand Specialist",
+                "capabilities": [
+                    "Brand identity development",
+                    "Visual guideline creation",
+                    "Platform-specific adaptations",
+                    "Design template development"
+                ]
+            },
+            {
+                "name": "Performance Optimizer",
+                "role": "Senior Performance Marketing and Analytics Specialist",
+                "capabilities": [
+                    "KPI framework development",
+                    "Tracking and analytics setup",
+                    "Optimization roadmap creation",
+                    "Continuous improvement processes"
+                ]
+            }
+        ]
+    }
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

@@ -57,6 +57,11 @@ build/
 .env.test.local
 .env.production.local
 
+# Environment variables
+.env
+.env.*
+!.env.example
+
 # ChromaDB
 chroma_db/
 *.db
