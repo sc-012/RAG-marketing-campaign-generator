@@ -21,7 +21,7 @@ from llama_index.core import (
 )
 from llama_index.vector_stores.chroma import ChromaVectorStore
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
-from llama_index.llms.huggingface import HuggingFaceLLM
+from llama_index.llms.openai import OpenAI
 import chromadb
 from chromadb.config import Settings as ChromaSettings
 
@@ -44,6 +44,9 @@ embed_model = None
 chroma_client = None
 collection = None
 
+# Upload progress tracking
+upload_progress = {"status": "idle", "message": "", "progress": 0}
+
 def initialize_rag_components():
     """Initialize RAG components on startup"""
     global vector_index, llm, embed_model, chroma_client, collection
@@ -55,34 +58,25 @@ def initialize_rag_components():
             settings=ChromaSettings(anonymized_telemetry=False)
         )
         
-        # Initialize embedding model
+        # Initialize embedding model with optimized settings
         embed_model = HuggingFaceEmbedding(
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
+            model_name="sentence-transformers/all-MiniLM-L6-v2",
+            device="cpu"  # Force CPU usage for stability
         )
         Settings.embed_model = embed_model
         
-        # Initialize LLM (using Mistral 7B Instruct with memory optimization)
-        print("Loading DistilGPT-2 model... This should be quick.")
+        # Initialize OpenAI LLM
+        print("Initializing OpenAI API...")
         
-        llm = HuggingFaceLLM(
-            model_name="distilgpt2",
-            tokenizer_name="distilgpt2",
-            context_window=1024,  # Smaller context window
-            max_new_tokens=256,   # Reduced max tokens
-            model_kwargs={
-                "dtype": "auto",
-                "trust_remote_code": True,
-            },
-            generate_kwargs={
-                "do_sample": True, 
-                "temperature": 0.7, 
-                "top_p": 0.9,
-                "repetition_penalty": 1.1
-            },
+        llm = OpenAI(
+            model="gpt-3.5-turbo",
+            temperature=0.7,
+            max_tokens=500,
+            api_key=os.getenv("OPENAI_API_KEY")
         )
         Settings.llm = llm
         
-        print("DistilGPT-2 model loaded successfully!")
+        print("OpenAI API initialized successfully!")
         
         # Try to load existing collection or create new one
         try:
@@ -103,7 +97,8 @@ def initialize_rag_components():
         print("Make sure you have enough memory (8GB+ RAM recommended)")
         # Fallback initialization
         embed_model = HuggingFaceEmbedding(
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
+            model_name="sentence-transformers/all-MiniLM-L6-v2",
+            device="cpu"
         )
         Settings.embed_model = embed_model
 
@@ -144,11 +139,18 @@ async def upload_file(file: UploadFile = File(...)):
         )
     
     try:
+        global upload_progress
+        upload_progress = {"status": "uploading", "message": f"Starting upload of {file.filename}...", "progress": 10}
+        print(f"Starting upload of {file.filename}...")
+        
         # Save uploaded file temporarily
         with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp_file:
             content = await file.read()
             tmp_file.write(content)
             tmp_file_path = tmp_file.name
+        
+        upload_progress = {"status": "processing", "message": f"File saved, size: {len(content)} bytes", "progress": 30}
+        print(f"File saved, size: {len(content)} bytes")
         
         # Create a temporary directory for LlamaIndex
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -156,23 +158,53 @@ async def upload_file(file: UploadFile = File(...)):
             temp_file_path = os.path.join(temp_dir, file.filename)
             shutil.copy2(tmp_file_path, temp_file_path)
             
-            # Load document with LlamaIndex
-            documents = SimpleDirectoryReader(temp_dir).load_data()
+            upload_progress = {"status": "processing", "message": "Loading document with LlamaIndex...", "progress": 50}
+            print("Loading document with LlamaIndex...")
+            # Load document with LlamaIndex - optimized for speed
+            documents = SimpleDirectoryReader(
+                temp_dir,
+                file_extractor={
+                    ".pdf": "PyMuPDFReader",  # Faster PDF reader
+                    ".txt": "TextFileReader",
+                    ".csv": "CSVReader",
+                    ".md": "MarkdownReader",
+                    ".docx": "DocxReader"
+                }
+            ).load_data()
             
-            # Add documents to the vector index
-            for doc in documents:
-                vector_index.insert(doc)
+            upload_progress = {"status": "indexing", "message": f"Document loaded, {len(documents)} chunks created", "progress": 70}
+            print(f"Document loaded, {len(documents)} chunks created")
+            
+            # Add documents to the vector index in batches for better performance
+            batch_size = 5  # Process in smaller batches
+            total_batches = (len(documents) - 1) // batch_size + 1
+            for i in range(0, len(documents), batch_size):
+                batch = documents[i:i + batch_size]
+                for doc in batch:
+                    # Truncate very long documents to improve speed
+                    if len(doc.text) > 4000:  # Limit text length
+                        doc.text = doc.text[:4000] + "..."
+                    vector_index.insert(doc)
+                batch_num = i // batch_size + 1
+                progress = 70 + (batch_num / total_batches) * 20
+                upload_progress = {"status": "indexing", "message": f"Processed batch {batch_num}/{total_batches}", "progress": int(progress)}
+                print(f"Processed batch {batch_num}/{total_batches}")
         
         # Clean up temporary file
         os.unlink(tmp_file_path)
         
+        upload_progress = {"status": "completed", "message": f"Upload completed for {file.filename}", "progress": 100}
+        print(f"Upload completed for {file.filename}")
         return {
             "message": f"File '{file.filename}' uploaded and indexed successfully",
             "filename": file.filename,
-            "file_size": len(content)
+            "file_size": len(content),
+            "chunks_processed": len(documents)
         }
         
     except Exception as e:
+        upload_progress = {"status": "error", "message": f"Error processing file: {str(e)}", "progress": 0}
+        print(f"Error processing file: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
 
 @app.post("/query")
@@ -189,28 +221,29 @@ async def query_campaign(
         raise HTTPException(status_code=500, detail="RAG system not initialized")
     
     try:
-        # Create a comprehensive query combining user input with parameters
+        # Create a structured query for better marketing content generation
         enhanced_query = f"""
-        Marketing Campaign Request:
-        Goal: {goal}
-        Target Audience: {audience}
-        Tone: {tone}
-        Specific Query: {query}
+        Create a marketing campaign for:
+        - Goal: {goal}
+        - Audience: {audience}
+        - Tone: {tone}
+        - Focus: {query}
         
-        Please generate a comprehensive marketing campaign that includes:
-        1. Campaign concept and strategy
-        2. Key messaging and slogans
-        3. Target audience insights
-        4. Channel recommendations
-        5. Creative ideas and execution suggestions
+        Provide a clear, professional marketing strategy with:
+        1. Campaign concept
+        2. Key messages
+        3. Target channels
+        4. Creative suggestions
         
-        Base your recommendations on the provided context and make them specific to the goal, audience, and tone specified.
+        Keep the response concise and actionable.
         """
         
-        # Query the vector index
+        # Query the vector index with optimized settings
         query_engine = vector_index.as_query_engine(
             response_mode="compact",
-            similarity_top_k=3  # Reduced to save memory
+            similarity_top_k=2,  # Further reduced for speed
+            streaming=False,  # Disable streaming for faster response
+            verbose=False  # Reduce logging overhead
         )
         
         response = query_engine.query(enhanced_query)
@@ -236,10 +269,16 @@ async def health_check():
         "status": "healthy",
         "rag_initialized": vector_index is not None,
         "llm_available": llm is not None,
-        "llm_provider": "HuggingFace (Mistral-7B-Instruct)",
+        "llm_provider": "OpenAI (GPT-3.5-turbo)",
         "embed_model_available": embed_model is not None,
         "chroma_available": chroma_client is not None
     }
 
+@app.get("/upload-progress")
+async def get_upload_progress():
+    """Get current upload progress"""
+    global upload_progress
+    return upload_progress
+
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
