@@ -161,16 +161,24 @@ async def upload_file(file: UploadFile = File(...)):
             upload_progress = {"status": "processing", "message": "Loading document with LlamaIndex...", "progress": 50}
             print("Loading document with LlamaIndex...")
             # Load document with LlamaIndex - optimized for speed
-            documents = SimpleDirectoryReader(
-                temp_dir,
-                file_extractor={
-                    ".pdf": "PyMuPDFReader",  # Faster PDF reader
-                    ".txt": "TextFileReader",
-                    ".csv": "CSVReader",
-                    ".md": "MarkdownReader",
-                    ".docx": "DocxReader"
-                }
-            ).load_data()
+            from llama_index.readers.file import PDFReader, DocxReader, MarkdownReader
+            
+            # Use proper file readers
+            if file_ext == ".pdf":
+                reader = PDFReader()
+                documents = reader.load_data(temp_file_path)
+            elif file_ext == ".docx":
+                reader = DocxReader()
+                documents = reader.load_data(temp_file_path)
+            elif file_ext == ".csv":
+                # For CSV files, use SimpleDirectoryReader
+                documents = SimpleDirectoryReader(temp_dir).load_data()
+            elif file_ext == ".md":
+                reader = MarkdownReader()
+                documents = reader.load_data(temp_file_path)
+            else:
+                # For .txt files, use SimpleDirectoryReader
+                documents = SimpleDirectoryReader(temp_dir).load_data()
             
             upload_progress = {"status": "indexing", "message": f"Document loaded, {len(documents)} chunks created", "progress": 70}
             print(f"Document loaded, {len(documents)} chunks created")
@@ -279,6 +287,165 @@ async def get_upload_progress():
     """Get current upload progress"""
     global upload_progress
     return upload_progress
+
+@app.get("/campaign-templates")
+async def get_campaign_templates():
+    """Get available campaign templates"""
+    return {
+        "templates": [
+            {
+                "id": "email_marketing",
+                "name": "Email Marketing Campaign",
+                "description": "Complete email marketing campaign with subject lines, content, and CTAs",
+                "channels": ["Email"],
+                "components": ["Subject Lines", "Email Content", "Call-to-Actions", "Send Schedule"]
+            },
+            {
+                "id": "social_media_series",
+                "name": "Social Media Post Series",
+                "description": "Multi-platform social media content series with platform-specific optimization",
+                "channels": ["Instagram", "Facebook", "Twitter", "LinkedIn", "TikTok"],
+                "components": ["Post Content", "Hashtags", "Visual Ideas", "Posting Schedule"]
+            },
+            {
+                "id": "content_calendar",
+                "name": "Content Calendar Generation",
+                "description": "30-day content calendar with themes, topics, and posting schedule",
+                "channels": ["All Platforms"],
+                "components": ["Daily Themes", "Content Topics", "Posting Schedule", "Content Ideas"]
+            },
+            {
+                "id": "ab_testing",
+                "name": "A/B Testing Strategy",
+                "description": "Comprehensive A/B testing plan with variants and success metrics",
+                "channels": ["All Platforms"],
+                "components": ["Test Variants", "Success Metrics", "Testing Schedule", "Analysis Framework"]
+            }
+        ]
+    }
+
+@app.post("/generate-template")
+async def generate_campaign_template(
+    template_type: str = Form(...),
+    goal: str = Form(...),
+    audience: str = Form(...),
+    tone: str = Form(...),
+    query: str = Form(...),
+    additional_params: str = Form("")
+):
+    """Generate specific campaign template based on type"""
+    global vector_index, llm
+    
+    if not vector_index:
+        raise HTTPException(status_code=500, detail="RAG system not initialized")
+    
+    try:
+        # Enhanced query based on template type
+        template_queries = {
+            "email_marketing": f"""
+            Create a comprehensive email marketing campaign for:
+            - Goal: {goal}
+            - Audience: {audience}
+            - Tone: {tone}
+            - Focus: {query}
+            
+            Include:
+            1. 5 compelling subject lines
+            2. Email content structure (preheader, body, CTA)
+            3. Call-to-action buttons with text
+            4. Send schedule recommendations
+            5. Personalization suggestions
+            6. A/B testing ideas for subject lines
+            
+            Make it actionable and specific to the audience.
+            """,
+            
+            "social_media_series": f"""
+            Create a social media content series for:
+            - Goal: {goal}
+            - Audience: {audience}
+            - Tone: {tone}
+            - Focus: {query}
+            
+            Include for each platform (Instagram, Facebook, Twitter, LinkedIn, TikTok):
+            1. 7-10 post ideas with captions
+            2. Platform-specific hashtag strategies
+            3. Visual content suggestions
+            4. Optimal posting times
+            5. Engagement tactics
+            6. Content themes and pillars
+            
+            Make each post unique and platform-optimized.
+            """,
+            
+            "content_calendar": f"""
+            Create a 30-day content calendar for:
+            - Goal: {goal}
+            - Audience: {audience}
+            - Tone: {tone}
+            - Focus: {query}
+            
+            Include:
+            1. Weekly themes and topics
+            2. Daily content ideas (30 days)
+            3. Platform-specific content adaptations
+            4. Posting schedule with optimal times
+            5. Content mix (educational, promotional, entertaining)
+            6. Seasonal and trending content opportunities
+            7. Content repurposing strategies
+            
+            Make it practical and easy to execute.
+            """,
+            
+            "ab_testing": f"""
+            Create an A/B testing strategy for:
+            - Goal: {goal}
+            - Audience: {audience}
+            - Tone: {tone}
+            - Focus: {query}
+            
+            Include:
+            1. 5-7 testable elements to focus on
+            2. Specific test variants for each element
+            3. Success metrics and KPIs to track
+            4. Testing timeline and schedule
+            5. Sample size recommendations
+            6. Statistical significance guidelines
+            7. Implementation roadmap
+            8. Analysis and optimization process
+            
+            Make it data-driven and measurable.
+            """
+        }
+        
+        enhanced_query = template_queries.get(template_type, template_queries["email_marketing"])
+        
+        # Query the vector index
+        query_engine = vector_index.as_query_engine(
+            response_mode="compact",
+            similarity_top_k=2,
+            streaming=False,
+            verbose=False
+        )
+        
+        response = query_engine.query(enhanced_query)
+        
+        return {
+            "template_type": template_type,
+            "campaign": response.response,
+            "parameters": {
+                "goal": goal,
+                "audience": audience,
+                "tone": tone,
+                "query": query,
+                "additional_params": additional_params
+            },
+            "context_used": len(response.source_nodes) if hasattr(response, 'source_nodes') else 0,
+            "generated_at": "2024-01-01T00:00:00Z"  # You can add proper timestamp
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating template: {str(e)}")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
