@@ -126,16 +126,22 @@ class MarketingCrewOrchestrator:
                 result_text = str(result)
             
             print(f"Parsing crew result, length: {len(result_text)}")
+            print(f"First 1000 characters of result: {result_text[:1000]}")
             
-            # Extract specific sections from the result
-            document_analysis = self._extract_section(result_text, "Document Analysis", "Brand Identity")
-            campaign_strategy = self._extract_section(result_text, "Campaign Strategy", "Strategy")
-            content_creation = self._extract_section(result_text, "Content", "Content")
-            social_media = self._extract_section(result_text, "Social Media", "Social")
-            email_marketing = self._extract_section(result_text, "Email", "Email")
-            ab_testing = self._extract_section(result_text, "A/B Testing", "Testing")
-            visual_design = self._extract_section(result_text, "Visual", "Design")
-            performance = self._extract_section(result_text, "Performance", "Optimization")
+            # Extract specific sections from the result using more comprehensive keywords
+            document_analysis = self._extract_section(result_text, "BRAND IDENTITY ANALYSIS", "TARGET AUDIENCE INSIGHTS", "KEY MESSAGES", "Document Analysis", "Brand Identity", "Document Analyzer")
+            campaign_strategy = self._extract_section(result_text, "CAMPAIGN OVERVIEW", "MESSAGING FRAMEWORK", "CHANNEL STRATEGY", "Campaign Strategy", "Strategy", "Campaign Strategist")
+            content_creation = self._extract_section(result_text, "Content", "CONTENT", "Content Creation", "Content Creator")
+            social_media = self._extract_section(result_text, "Social Media", "SOCIAL", "Instagram", "Facebook", "LinkedIn", "Social Media Specialist")
+            email_marketing = self._extract_section(result_text, "Email", "EMAIL", "Email Marketing", "Email Marketing Expert")
+            ab_testing = self._extract_section(result_text, "A/B Testing", "TESTING", "AB Testing", "A/B Testing Analyst")
+            visual_design = self._extract_section(result_text, "Visual", "DESIGN", "Visual Design", "Visual Designer")
+            performance = self._extract_section(result_text, "Performance", "OPTIMIZATION", "KPI", "Metrics", "Performance Optimizer")
+            
+            # Debug: Print what each section extracted
+            print(f"Document Analysis extracted: {document_analysis[:200] if document_analysis else 'None'}...")
+            print(f"Campaign Strategy extracted: {campaign_strategy[:200] if campaign_strategy else 'None'}...")
+            print(f"A/B Testing extracted: {ab_testing[:200] if ab_testing else 'None'}...")
             
             # Structure the result for the frontend
             campaign_result = {
@@ -201,23 +207,41 @@ class MarketingCrewOrchestrator:
             }
     
     def _extract_section(self, text: str, *keywords) -> str:
-        """Extract specific section from result text based on keywords"""
+        """Extract specific section from result text based on keywords - ENHANCED VERSION"""
         try:
             lines = text.split('\n')
             section_lines = []
             in_section = False
+            found_keyword = False
             
-            for line in lines:
+            for i, line in enumerate(lines):
+                # Check if this line contains any of our keywords
                 if any(keyword.lower() in line.lower() for keyword in keywords):
                     in_section = True
+                    found_keyword = True
                     section_lines.append(line)
-                elif in_section and line.strip() and not line.startswith('---'):
-                    section_lines.append(line)
+                elif in_section and line.strip():
+                    # Continue collecting lines until we hit another agent section or empty line
+                    if line.startswith('---') and 'Agent' in line:
+                        break
+                    elif line.strip() and not line.startswith('---'):
+                        section_lines.append(line)
+                elif in_section and not line.strip() and found_keyword:
+                    # If we've found content and hit an empty line, continue for a few more lines
+                    continue
                 elif in_section and line.startswith('---'):
                     break
             
-            return '\n'.join(section_lines[:10]) if section_lines else None
-        except:
+            # Return the section content, limiting to reasonable length
+            result = '\n'.join(section_lines[:20]) if section_lines else None
+            
+            # If we found something, clean it up
+            if result and len(result.strip()) > 10:
+                return result.strip()
+            
+            return None
+        except Exception as e:
+            print(f"Error extracting section: {str(e)}")
             return None
     
     def _create_fallback_response(self, campaign_goal: str, target_audience: str, template_type: str = None) -> Dict[str, Any]:
