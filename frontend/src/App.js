@@ -368,6 +368,84 @@ function App() {
     if (!contribution) return <Typography variant="body2">No contribution data available.</Typography>;
 
     // Handle different types of contributions based on agent
+    if (selectedAgent === 'A/B Testing Analyst') {
+      return (
+        <Box>
+          <Typography variant="h6" gutterBottom color="primary">
+            A/B Testing Strategy
+          </Typography>
+          <Typography variant="body2" sx={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}>
+            {typeof contribution === 'string' ? contribution : JSON.stringify(contribution, null, 2)}
+          </Typography>
+        </Box>
+      );
+    }
+    
+    if (selectedAgent === 'Document Analyzer') {
+      return (
+        <Box>
+          <Typography variant="h6" gutterBottom color="primary">
+            Document Analysis
+          </Typography>
+          <Typography variant="body2" sx={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}>
+            {typeof contribution === 'string' ? contribution : JSON.stringify(contribution, null, 2)}
+          </Typography>
+        </Box>
+      );
+    }
+    
+    if (selectedAgent === 'Content Creator') {
+      return (
+        <Box>
+          <Typography variant="h6" gutterBottom color="primary">
+            Content Strategy
+          </Typography>
+          <Typography variant="body2" sx={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}>
+            {typeof contribution === 'string' ? contribution : JSON.stringify(contribution, null, 2)}
+          </Typography>
+        </Box>
+      );
+    }
+    
+    if (selectedAgent === 'Email Marketing Expert') {
+      return (
+        <Box>
+          <Typography variant="h6" gutterBottom color="primary">
+            Email Marketing Strategy
+          </Typography>
+          <Typography variant="body2" sx={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}>
+            {typeof contribution === 'string' ? contribution : JSON.stringify(contribution, null, 2)}
+          </Typography>
+        </Box>
+      );
+    }
+    
+    if (selectedAgent === 'Visual Designer') {
+      return (
+        <Box>
+          <Typography variant="h6" gutterBottom color="primary">
+            Visual Design Guidelines
+          </Typography>
+          <Typography variant="body2" sx={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}>
+            {typeof contribution === 'string' ? contribution : JSON.stringify(contribution, null, 2)}
+          </Typography>
+        </Box>
+      );
+    }
+    
+    if (selectedAgent === 'Performance Optimizer') {
+      return (
+        <Box>
+          <Typography variant="h6" gutterBottom color="primary">
+            Performance Optimization
+          </Typography>
+          <Typography variant="body2" sx={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}>
+            {typeof contribution === 'string' ? contribution : JSON.stringify(contribution, null, 2)}
+          </Typography>
+        </Box>
+      );
+    }
+    
     if (selectedAgent === 'Campaign Strategist' && contribution.campaign_overview) {
       return (
         <Box>
