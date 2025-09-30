@@ -511,15 +511,9 @@ async def generate_multi_agent_campaign(
         # Get document content from vector index for analysis using RAG
         print(f"Retrieving relevant documents for query: {query}")
         
-        # Use RAG to retrieve relevant document content with enhanced query
-        enhanced_rag_query = f"""
-        Marketing documents for {goal} campaign targeting {audience}.
-        Focus on: brand guidelines, target audience insights, messaging, features, benefits, positioning.
-        Query: {query}
-        """
-        
-        retriever = vector_index.as_retriever(similarity_top_k=8)  # Get more documents
-        relevant_docs = retriever.retrieve(enhanced_rag_query)
+        # Use RAG to retrieve relevant document content
+        retriever = vector_index.as_retriever(similarity_top_k=5)
+        relevant_docs = retriever.retrieve(query)
         
         # Combine relevant documents into a comprehensive context
         document_content = ""
@@ -528,21 +522,13 @@ async def generate_multi_agent_campaign(
         if relevant_docs:
             print(f"Found {len(relevant_docs)} relevant documents")
             for i, doc in enumerate(relevant_docs):
-                document_content += f"\n=== DOCUMENT {i+1} ===\n"
+                document_content += f"\n--- Document {i+1} ---\n"
                 document_content += f"Content: {doc.text}\n"
                 if hasattr(doc, 'metadata') and doc.metadata:
-                    document_content += f"Source: {doc.metadata}\n"
-                document_content += f"Relevance Score: {getattr(doc, 'score', 'N/A')}\n"
+                    document_content += f"Metadata: {doc.metadata}\n"
         else:
             print("No relevant documents found, using general context")
-            document_content = f"""
-            GENERAL MARKETING CONTEXT:
-            Campaign Goal: {goal}
-            Target Audience: {audience}
-            Query Focus: {query}
-            
-            Please provide specific insights based on general marketing best practices for this type of campaign.
-            """
+            document_content = f"General marketing context for {goal} campaign targeting {audience}. Query: {query}"
         
         print(f"Document content length: {len(document_content)} characters")
         

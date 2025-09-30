@@ -126,19 +126,18 @@ class MarketingCrewOrchestrator:
                 result_text = str(result)
             
             print(f"Parsing crew result, length: {len(result_text)}")
-            print(f"First 500 characters: {result_text[:500]}")
             
-            # Extract specific sections from the result using more specific keywords
-            document_analysis = self._extract_section(result_text, "BRAND IDENTITY ANALYSIS", "TARGET AUDIENCE INSIGHTS", "KEY MESSAGES", "Document Analysis")
-            campaign_strategy = self._extract_section(result_text, "CAMPAIGN OVERVIEW", "MESSAGING FRAMEWORK", "CHANNEL STRATEGY", "Campaign Strategy")
-            content_creation = self._extract_section(result_text, "Content", "CONTENT", "Content Creation")
-            social_media = self._extract_section(result_text, "Social Media", "SOCIAL", "Instagram", "Facebook", "LinkedIn")
-            email_marketing = self._extract_section(result_text, "Email", "EMAIL", "Email Marketing")
-            ab_testing = self._extract_section(result_text, "A/B Testing", "TESTING", "AB Testing")
-            visual_design = self._extract_section(result_text, "Visual", "DESIGN", "Visual Design")
-            performance = self._extract_section(result_text, "Performance", "OPTIMIZATION", "KPI", "Metrics")
+            # Extract specific sections from the result
+            document_analysis = self._extract_section(result_text, "Document Analysis", "Brand Identity")
+            campaign_strategy = self._extract_section(result_text, "Campaign Strategy", "Strategy")
+            content_creation = self._extract_section(result_text, "Content", "Content")
+            social_media = self._extract_section(result_text, "Social Media", "Social")
+            email_marketing = self._extract_section(result_text, "Email", "Email")
+            ab_testing = self._extract_section(result_text, "A/B Testing", "Testing")
+            visual_design = self._extract_section(result_text, "Visual", "Design")
+            performance = self._extract_section(result_text, "Performance", "Optimization")
             
-            # Use the actual agent outputs instead of generic templates
+            # Structure the result for the frontend
             campaign_result = {
                 "campaign_overview": {
                     "objective": campaign_goal,
@@ -146,8 +145,18 @@ class MarketingCrewOrchestrator:
                     "campaign_type": template_type or "General Campaign",
                     "strategy": campaign_strategy or f"Comprehensive marketing strategy for {campaign_goal}",
                     "document_analysis": document_analysis or "Document analysis completed",
-                    "key_differentiators": self._extract_key_differentiators(result_text),
-                    "expected_outcomes": self._extract_expected_outcomes(result_text)
+                    "key_differentiators": [
+                        "AI-powered document analysis",
+                        "Multi-agent collaboration",
+                        "Data-driven insights",
+                        "Comprehensive strategy"
+                    ],
+                    "expected_outcomes": [
+                        "Improved brand awareness",
+                        "Higher engagement rates",
+                        "Better ROI",
+                        "Enhanced customer experience"
+                    ]
                 },
                 "content": {
                     "overview": content_creation or f"Comprehensive content strategy for {campaign_goal} targeting {target_audience}",
@@ -156,7 +165,7 @@ class MarketingCrewOrchestrator:
                     "visual_guidelines": visual_design or "Brand-consistent visual design system"
                 },
                 "optimization": {
-                    "kpis": self._extract_kpis(result_text),
+                    "kpis": ["Brand awareness", "Engagement rate", "Conversion rate", "ROI"],
                     "ab_testing": ab_testing or "Comprehensive testing framework for all campaign elements",
                     "monitoring": performance or "Real-time performance tracking and optimization"
                 },
@@ -210,93 +219,6 @@ class MarketingCrewOrchestrator:
             return '\n'.join(section_lines[:10]) if section_lines else None
         except:
             return None
-    
-    def _extract_key_differentiators(self, text: str) -> List[str]:
-        """Extract key differentiators from agent output"""
-        try:
-            lines = text.split('\n')
-            differentiators = []
-            in_section = False
-            
-            for line in lines:
-                if 'differentiator' in line.lower() or 'unique' in line.lower() or 'advantage' in line.lower():
-                    in_section = True
-                    if line.strip() and not line.startswith('---'):
-                        differentiators.append(line.strip())
-                elif in_section and line.strip() and not line.startswith('---'):
-                    if line.startswith('-') or line.startswith('•'):
-                        differentiators.append(line.strip())
-                    elif len(differentiators) < 5:  # Limit to 5 differentiators
-                        differentiators.append(line.strip())
-                elif in_section and line.startswith('---'):
-                    break
-            
-            return differentiators[:5] if differentiators else [
-                "AI-powered document analysis",
-                "Multi-agent collaboration", 
-                "Data-driven insights",
-                "Comprehensive strategy"
-            ]
-        except:
-            return ["AI-powered insights", "Multi-agent collaboration"]
-    
-    def _extract_expected_outcomes(self, text: str) -> List[str]:
-        """Extract expected outcomes from agent output"""
-        try:
-            lines = text.split('\n')
-            outcomes = []
-            in_section = False
-            
-            for line in lines:
-                if 'outcome' in line.lower() or 'result' in line.lower() or 'metric' in line.lower():
-                    in_section = True
-                    if line.strip() and not line.startswith('---'):
-                        outcomes.append(line.strip())
-                elif in_section and line.strip() and not line.startswith('---'):
-                    if line.startswith('-') or line.startswith('•'):
-                        outcomes.append(line.strip())
-                    elif len(outcomes) < 5:  # Limit to 5 outcomes
-                        outcomes.append(line.strip())
-                elif in_section and line.startswith('---'):
-                    break
-            
-            return outcomes[:5] if outcomes else [
-                "Improved brand awareness",
-                "Higher engagement rates",
-                "Better ROI",
-                "Enhanced customer experience"
-            ]
-        except:
-            return ["Improved performance", "Higher engagement", "Better ROI"]
-    
-    def _extract_kpis(self, text: str) -> List[str]:
-        """Extract KPIs from agent output"""
-        try:
-            lines = text.split('\n')
-            kpis = []
-            in_section = False
-            
-            for line in lines:
-                if 'kpi' in line.lower() or 'metric' in line.lower() or 'measure' in line.lower():
-                    in_section = True
-                    if line.strip() and not line.startswith('---'):
-                        kpis.append(line.strip())
-                elif in_section and line.strip() and not line.startswith('---'):
-                    if line.startswith('-') or line.startswith('•'):
-                        kpis.append(line.strip())
-                    elif len(kpis) < 6:  # Limit to 6 KPIs
-                        kpis.append(line.strip())
-                elif in_section and line.startswith('---'):
-                    break
-            
-            return kpis[:6] if kpis else [
-                "Brand awareness",
-                "Engagement rate", 
-                "Conversion rate",
-                "ROI"
-            ]
-        except:
-            return ["Brand awareness", "Engagement", "Conversion", "ROI"]
     
     def _create_fallback_response(self, campaign_goal: str, target_audience: str, template_type: str = None) -> Dict[str, Any]:
         """Create a fallback response when crew execution fails or times out"""
@@ -548,102 +470,43 @@ class MarketingCrewOrchestrator:
         tasks = [
             Task(
                 description=f"""DOCUMENT ANALYSIS TASK:
-You are a Senior Marketing Document Analyst. Analyze the following marketing documents and extract SPECIFIC, ACTIONABLE insights.
+Analyze the following marketing documents and extract specific insights:
 
-DOCUMENT CONTENT TO ANALYZE:
-{document_content}
+DOCUMENT CONTENT:
+{document_content[:2000]}...
 
 CAMPAIGN CONTEXT:
 - Goal: {campaign_goal}
 - Target Audience: {target_audience}
 - Template Type: {template_type or 'General Campaign'}
 
-REQUIRED OUTPUT FORMAT:
-1. BRAND IDENTITY ANALYSIS:
-   - Specific brand colors mentioned (e.g., "#FF6B6B", "Slack Purple")
-   - Exact fonts used (e.g., "Helvetica Neue", "Circular")
-   - Precise tone of voice (e.g., "Conversational and friendly", "Professional yet approachable")
-   - Brand personality traits (e.g., "Innovative", "Reliable", "User-focused")
+Provide a structured analysis with:
+1. Brand Identity Elements (colors, fonts, tone, voice)
+2. Target Audience Insights (demographics, psychographics, pain points)
+3. Key Messages and Value Propositions
+4. Product/Service Features and Benefits
+5. Strategic Recommendations
 
-2. TARGET AUDIENCE INSIGHTS:
-   - Specific demographics from documents (age ranges, job titles, company sizes)
-   - Psychographics mentioned (values, interests, pain points)
-   - Behavioral patterns identified
-   - Geographic targeting if mentioned
-
-3. KEY MESSAGES & VALUE PROPS:
-   - Exact value propositions stated in documents
-   - Unique selling points mentioned
-   - Competitive advantages highlighted
-   - Key benefits for target audience
-
-4. PRODUCT/SERVICE FEATURES:
-   - Specific features mentioned in documents
-   - Technical specifications if provided
-   - Pricing information if available
-   - Use cases and applications
-
-5. STRATEGIC RECOMMENDATIONS:
-   - Specific opportunities identified from document analysis
-   - Recommended messaging strategies
-   - Channel recommendations based on document insights
-   - Content themes to emphasize
-
-IMPORTANT: Base your analysis on the ACTUAL document content provided above. Extract specific details, quotes, and insights from the documents. Do not provide generic responses.""",
+Be specific and actionable based on the actual document content.""",
                 agent=self.agents["document_analyzer"].create_agent(),
-                expected_output="Detailed document analysis with specific brand elements, exact quotes from documents, precise audience insights, and actionable strategic recommendations based on the actual document content"
+                expected_output="Structured document analysis with specific brand elements, audience insights, and strategic recommendations"
             ),
             Task(
-                description=f"""CAMPAIGN STRATEGY DEVELOPMENT TASK:
-You are a Senior Marketing Campaign Strategist. Develop a comprehensive campaign strategy based on the document analysis from the previous agent.
+                description=f"""Develop a comprehensive marketing campaign strategy based on the document analysis:
 
-CAMPAIGN CONTEXT:
-- Goal: {campaign_goal}
-- Target Audience: {target_audience}
-- Template Type: {template_type or 'General Campaign'}
+CAMPAIGN GOAL: {campaign_goal}
+TARGET AUDIENCE: {target_audience}
+TEMPLATE TYPE: {template_type or 'General Campaign'}
 
-DOCUMENT CONTENT FOR REFERENCE:
-{document_content[:1000]}...
-
-REQUIRED OUTPUT FORMAT:
-1. CAMPAIGN OVERVIEW:
-   - Specific campaign objective based on document insights
-   - Target audience segments with detailed personas
-   - Campaign type and positioning strategy
-   - Key differentiators from document analysis
-
-2. MESSAGING FRAMEWORK:
-   - Primary message based on document content
-   - Supporting messages for different audience segments
-   - Tone of voice recommendations from brand analysis
-   - Value propositions extracted from documents
-
-3. CHANNEL STRATEGY:
-   - Primary channels recommended based on audience insights
-   - Secondary channels for broader reach
-   - Channel-specific messaging adaptations
-   - Budget allocation recommendations
-
-4. TIMELINE & MILESTONES:
-   - Phase 1: Setup and preparation (specific weeks)
-   - Phase 2: Launch and initial campaigns (specific weeks)
-   - Phase 3: Optimization and scaling (specific weeks)
-   - Key milestones and deliverables
-
-5. SUCCESS METRICS:
-   - Primary KPIs based on campaign goal
-   - Secondary metrics for optimization
-   - Measurement methods and tools
-   - Expected outcomes with specific targets
-
-6. RISK MITIGATION:
-   - Potential challenges identified
-   - Contingency plans for each risk
-   - Monitoring and adjustment strategies
-
-IMPORTANT: Use insights from the document analysis to create specific, actionable strategies. Reference specific details from the documents in your recommendations.""",
+Create specific, actionable strategies with:
+- Detailed messaging framework
+- Channel-specific tactics
+- Timeline with milestones
+- Budget allocation recommendations
+- Success metrics and KPIs
+- Risk mitigation strategies""",
                 agent=self.agents["campaign_strategist"].create_agent(),
-                expected_output="Comprehensive campaign strategy with specific tactics, detailed timelines, budget recommendations, and measurable outcomes based on document analysis"
+                expected_output="Comprehensive campaign strategy with specific tactics, timelines, budgets, and measurable outcomes"
             ),
             Task(
                 description=f"""Create engaging, platform-specific content based on the campaign strategy:
