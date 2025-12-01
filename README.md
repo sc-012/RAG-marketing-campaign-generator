@@ -1,4 +1,4 @@
-# DynamicRAGSystem - AI Marketing Campaign Generator
+# Retrieval-Augmented Generation (RAG) Marketing Campaign Generator
 
 A fullstack MVP application that uses Retrieval-Augmented Generation (RAG) to generate AI-powered marketing campaigns based on uploaded documents and user parameters.
 
